@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage, ToolMessage, RemoveMessage, Sy
 from tavily import TavilyClient
 from langgraph.prebuilt import tools_condition, ToolNode
 import os
-from rag_pipeline import *
+from langgraph_app.rag_pipeline import *
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph_app.prompts import *
 from langgraph_app.state import *

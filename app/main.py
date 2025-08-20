@@ -88,20 +88,8 @@ DO NOT:
 '''
 
 
-@app.get("/chat")
+@app.post("/chat")
 async def call_llm(query : str):
-    messages = {"messages" : [{"role" : "system", "content" : prompt}]}
-    messages["messages"].append({"role" : "user", "content" : f"{query}"})
-    response = response = graph.invoke(messages,config)
-    return {response["messages"][-1].content}
-
-
-@app.post("/upload-doc")
-async def upload_doc( query : str, file : UploadFile = File(None)):
-    contents = await file.read()
-    parsed_text = parse_pdf(contents)
-    print(parsed_text)
-    messages = {"messages" : [{"role" : "system", "content" : doc_prompt}]}
-    messages["messages"].append({"role" : "user", "content" : f"{parsed_text}"})
-    response = response = graph.invoke(messages)
+    messages = {"messages" : [{"role" : "user", "content" : f"{query}"}]}
+    response = graph.invoke(messages,config)
     return {response["messages"][-1].content}
