@@ -1,18 +1,23 @@
+import sys,os
+#to run langraph_utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+
 from fastapi import FastAPI
 from langgraph_app.agent_graph import *
 from fastapi import File, UploadFile
 from fastapi.responses import JSONResponse
-import fitz
+from pydantic import BaseModel
+#import fitz
 
 app = FastAPI()
 
-def parse_pdf(file_bytes: bytes) -> str:
-    """Extract text from a PDF file given as bytes."""
-    text = ""
-    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        for page in doc:
-            text += page.get_text()
-    return text.strip()
+# def parse_pdf(file_bytes: bytes) -> str:
+#     """Extract text from a PDF file given as bytes."""
+#     text = ""
+#     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+#         for page in doc:
+#             text += page.get_text()
+#     return text.strip()
 
 prompt = '''
     You are a helpful and responsible legal policy navigator assistant. Your role is to help users find accurate, up-to-date, and sourced information about U.S. policies, federal regulations, and laws.
@@ -87,9 +92,16 @@ DO NOT:
     3. Add disclaimers when simply summarizing facts or quoting the document.
 '''
 
+class QueryRequest(BaseModel):
+    query : str
+
+class QueryResponse(BaseModel):
+    response : str
+
 
 @app.post("/chat")
-async def call_llm(query : str):
-    messages = {"messages" : [{"role" : "user", "content" : f"{query}"}]}
+async def call_llm(request : QueryRequest):
+    messages = {"messages" : [{"role" : "user", "content" : f"{request.query}"}]}
     response = graph.invoke(messages,config)
-    return {response["messages"][-1].content}
+    res = QueryResponse(response=response["messages"][-1].content)
+    return res

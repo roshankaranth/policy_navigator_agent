@@ -13,7 +13,7 @@ from langgraph_app.prompts import *
 from langgraph_app.state import *
 
 _ = load_dotenv()
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-lite", temperature=0)
 tavily_client = TavilyClient(os.getenv("TAVILY_API_KEY"))
 
 def format_chat_history(messages: list[dict]) -> str:
