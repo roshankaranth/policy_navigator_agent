@@ -1,9 +1,7 @@
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.graph import MessagesState, StateGraph, START, END
-from IPython.display import Image,display
-from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod,NodeStyles
-from langchain_core.messages import HumanMessage, ToolMessage, RemoveMessage, SystemMessage
+from langgraph.graph import StateGraph, START
+from langchain_core.messages import RemoveMessage, SystemMessage
 from tavily import TavilyClient
 from langgraph.prebuilt import tools_condition, ToolNode
 import os
@@ -13,7 +11,8 @@ from langgraph_app.prompts import *
 from langgraph_app.state import *
 
 _ = load_dotenv()
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-lite", temperature=0)
+
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0)
 tavily_client = TavilyClient(os.getenv("TAVILY_API_KEY"))
 
 def format_chat_history(messages: list[dict]) -> str:
@@ -61,14 +60,14 @@ def llm_node(state : AgentState):
 def intent_handler(state : AgentInputState):
     user_query = state["messages"][-1].content
     prompt = Intent_Handler_Prompt.format(query = user_query)
-    response = llm.invoke(prompt)
+    response = llm_with_tools.invoke(prompt)
     intent = response.content
     return {"intent" : intent, "query" : user_query, "messages" : response}
 
 def summarize_node(state : AgentInputState):
     if(len(state["messages"]) > 10):
         prompt = summary_prompt.format(last_9_messages = state["messages"][:-2])
-        summary = llm.invoke(prompt)
+        summary = llm_with_tools.invoke(prompt)
         system_message = f"Summary of conversation earlier : {summary}"
         delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-2]]
         delete_messages = [SystemMessage(content=system_message)] + delete_messages
@@ -79,12 +78,12 @@ def summarize_node(state : AgentInputState):
 builder = StateGraph(AgentState, input_schema = AgentInputState)
 memory = MemorySaver()
 tool_node = ToolNode(tools)
-config = {"configurable" : {"thread_id" : "1"}}
 
 builder.add_node("summarize_node", summarize_node)
 builder.add_node("intent_handler", intent_handler)
 builder.add_node("llm_node", llm_node)
 builder.add_node("tools", tool_node)
+
 builder.add_edge(START, "intent_handler")
 builder.add_edge("intent_handler","summarize_node")
 builder.add_edge("summarize_node", "llm_node")

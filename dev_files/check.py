@@ -4,6 +4,7 @@ from azure.cosmos import CosmosClient, PartitionKey
 from langchain_community.vectorstores.azure_cosmos_db_no_sql import (
     AzureCosmosDBNoSqlVectorSearch,
 )
+import datetime
 
 import os
 import glob
@@ -69,3 +70,32 @@ def retrival_pipeline(query : str):
     retrieved_docs = vector_search.similarity_search(query=query, k=5)
     return retrieved_docs
     
+database = cosmos_client.get_database_client(database_name)
+container = database.get_container_client(container_name)
+
+query = "SELECT TOP 1 * FROM c ORDER BY c._ts DESC"
+items = list(container.query_items(
+    query=query,
+    enable_cross_partition_query=True
+))
+
+if items:
+    last_document = items[0]
+    print("Last updated document found:")
+    print(last_document["metadata"]["source"])
+else:
+    print("Container is empty or no documents were found.")
+
+timestamp = last_document['_ts']
+
+# Convert it to a readable UTC datetime object
+utc_datetime = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+
+# Convert it to your local timezone (e.g., IST)
+ist_timezone = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+local_time = utc_datetime.astimezone(ist_timezone)
+
+
+print(f"Raw '_ts' value: {timestamp}")
+print(f"Time in UTC: {utc_datetime.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+print(f"Time in local IST: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
