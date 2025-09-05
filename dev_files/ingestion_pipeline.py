@@ -61,7 +61,7 @@ for split in all_splits:
 
 print(f"All documents processed. Total chunks: {len(all_splits)}")
 
-print("🔗 Initializing Azure Cosmos DB Vector Store...")
+print(" Initializing Azure Cosmos DB Vector Store...")
 vector_store = AzureCosmosDBNoSqlVectorSearch(
     cosmos_client=cosmos_client,
     embedding=embeddings,
@@ -73,7 +73,7 @@ vector_store = AzureCosmosDBNoSqlVectorSearch(
     cosmos_database_properties={},
 )
 
-print("\n☁️ Uploading chunks to Azure Cosmos DB in batches...")
+print("\n Uploading chunks to Azure Cosmos DB in batches...")
 batch_size = 100
 failed_documents_to_retry = []
 
@@ -85,16 +85,16 @@ for i in tqdm(range(0, len(all_splits), batch_size), desc="Uploading Batches"):
 
     except Exception as e:
         batch_number = i // batch_size + 1
-        print(f"\n❌ Error processing batch {batch_number}: {e}")
+        print(f"\n Error processing batch {batch_number}: {e}")
 
         failed_documents_to_retry.extend(batch)
 
         time.sleep(2)
 
-print("\n✅ All chunks processed.")
+print("\n All chunks processed.")
 
 if failed_documents_to_retry:
-    print(f"\n⚠️ Warning: {len(failed_documents_to_retry)} document chunks failed to upload.")
+    print(f"\n Warning: {len(failed_documents_to_retry)} document chunks failed to upload.")
 
     failed_files = set(doc.metadata.get('source', 'Unknown Source') for doc in failed_documents_to_retry)
 
@@ -105,6 +105,6 @@ if failed_documents_to_retry:
                 f.write(f"{filename}\n")
         print(f"\n📄 A list of files that had upload errors has been saved to: {output_filename}")
     except IOError as e:
-        print(f"\n❌ Could not write to file {output_filename}: {e}")
+        print(f"\n Could not write to file {output_filename}: {e}")
 else:
-    print("\n🎉 All documents were ingested successfully!")
+    print("\n All documents were ingested successfully!")
