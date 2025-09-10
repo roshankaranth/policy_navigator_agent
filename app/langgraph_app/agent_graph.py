@@ -12,7 +12,6 @@ from langgraph_app.state import *
 
 _ = load_dotenv()
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0)
 tavily_client = TavilyClient(os.getenv("TAVILY_API_KEY"))
 
 def format_chat_history(messages: list[dict]) -> str:
@@ -36,13 +35,13 @@ def context_retriever(query : str) -> str:
     Args:
         query : str
     """
+    print("Retrieving context...")
     retrieved_docs = retrival_pipeline(query)
     return retrieved_docs
 
 tools = [web_search_tool, context_retriever]
-llm_with_tools = llm.bind_tools(tools)
 
-def llm_node(state : AgentState):
+def llm_node(state : AgentState, config):
     clean_messages = state["messages"]
     
     if state["intent"] == "eli5":
@@ -54,20 +53,25 @@ def llm_node(state : AgentState):
     elif state["intent"] == "policy_comparison":
         prompt = Policy_Comparison_Prompt.format(chat_history = clean_messages)
 
-    response = llm_with_tools.invoke(prompt)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0, google_api_key=config["metadata"]["api_key"])
+    llm_with_tools = llm.bind_tools(tools)
+
+    response = llm_with_tools.invoke(prompt,config=config)
     return {"response" : response.content, "messages" : response}
 
-def intent_handler(state : AgentInputState):
+def intent_handler(state : AgentInputState, config):
     user_query = state["messages"][-1].content
     prompt = Intent_Handler_Prompt.format(query = user_query)
-    response = llm_with_tools.invoke(prompt)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0, google_api_key=config["metadata"]["api_key"])
+    response = llm.invoke(prompt,config=config)
     intent = response.content
     return {"intent" : intent, "query" : user_query, "messages" : response}
 
-def summarize_node(state : AgentInputState):
+def summarize_node(state : AgentInputState, config):
     if(len(state["messages"]) > 10):
         prompt = summary_prompt.format(last_9_messages = state["messages"][:-2])
-        summary = llm_with_tools.invoke(prompt)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0, google_api_key=config["metadata"]["api_key"])
+        summary = response = llm.invoke(prompt,config=config)
         system_message = f"Summary of conversation earlier : {summary}"
         delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-2]]
         delete_messages = [SystemMessage(content=system_message)] + delete_messages
@@ -91,4 +95,5 @@ builder.add_conditional_edges("llm_node", tools_condition)
 builder.add_edge("tools", "llm_node")
 
 graph = builder.compile(checkpointer=memory)
+
 

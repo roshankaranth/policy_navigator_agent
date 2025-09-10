@@ -103,7 +103,7 @@ if failed_documents_to_retry:
         with open(output_filename, "w") as f:
             for filename in sorted(list(failed_files)):
                 f.write(f"{filename}\n")
-        print(f"\n📄 A list of files that had upload errors has been saved to: {output_filename}")
+        print(f"\n A list of files that had upload errors has been saved to: {output_filename}")
     except IOError as e:
         print(f"\n Could not write to file {output_filename}: {e}")
 else:

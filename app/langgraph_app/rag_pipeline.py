@@ -4,9 +4,7 @@ from azure.cosmos import CosmosClient, PartitionKey
 from langchain_community.vectorstores.azure_cosmos_db_no_sql import (
     AzureCosmosDBNoSqlVectorSearch,
 )
-
 import os
-import glob
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,12 +12,13 @@ load_dotenv()
 cosmos_host = os.getenv("COSMOS_HOST")
 cosmos_key = os.getenv("COSMOS_KEY")
 
-embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
 cosmos_client = CosmosClient(cosmos_host, cosmos_key)
 database_name = "vectordb"
 container_name = "embeddings"
 partition_key = PartitionKey(path="/userId")
 cosmos_container_properties = {"partition_key": partition_key}
+embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+
 
 indexing_policy = {
     "indexingMode": "consistent",
@@ -45,10 +44,6 @@ full_text_policy = {
     "fullTextPaths": [{"path": "/text", "language": "en-US"}],
 }
 
-# vector_search_fields = {
-#     "embedding_field": "embedding", 
-#     "text_field": "text",         
-# }
 
 vector_search = AzureCosmosDBNoSqlVectorSearch(
     embedding=embeddings,
@@ -61,11 +56,10 @@ vector_search = AzureCosmosDBNoSqlVectorSearch(
     cosmos_container_properties=cosmos_container_properties,
     cosmos_database_properties={},
     full_text_search_enabled=True,
-    # vector_search_fields=vector_search_fields,
-)
+)   
 
 def retrival_pipeline(query : str):
-    print("Retrieving context..")
+    
     retrieved_docs = vector_search.similarity_search(query=query, k=5)
     return retrieved_docs
     
